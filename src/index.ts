@@ -1,4 +1,5 @@
 import type { BetterAuthClientPlugin } from "better-auth/client";
+import type { SubscriptionStatus } from "./types";
 
 // Re-export types for user convenience
 export type { SubscriptionStatus } from "./types";
@@ -11,16 +12,19 @@ export const sigmaClient = () => {
 		getActions: ($fetch) => {
 			return {
 				subscription: {
-					getStatus: async () => {
-						const res = await $fetch("/subscription/status", {
-							method: "GET",
-						});
+					getStatus: async (): Promise<SubscriptionStatus> => {
+						const res = await $fetch<SubscriptionStatus>(
+							"/subscription/status",
+							{
+								method: "GET",
+							},
+						);
 						if (res.error) {
 							throw new Error(
 								res.error.message || "Failed to fetch subscription status",
 							);
 						}
-						return res.data;
+						return res.data as SubscriptionStatus;
 					},
 				},
 				signIn: {
