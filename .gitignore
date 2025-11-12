@@ -39,3 +39,7 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+
+# Internal notes and MCP config
+.internal/
+.mcp.json

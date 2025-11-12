@@ -1,10 +1,9 @@
 import type { BetterAuthClientPlugin } from "better-auth/client";
 
-export const sigmaClient = <T extends Record<string, unknown> = Record<string, never>>(): BetterAuthClientPlugin<T> => ({
+export const sigmaClient = (): BetterAuthClientPlugin => ({
 	id: "sigma",
-	$InferServerPlugin: {} as T,
 
-	getActions: ($fetch) => ({
+	getActions: ($fetch: typeof fetch) => ({
 		sigma: {
 			signIn: async (data: { authToken: string }) => {
 				const res = await $fetch("/api/auth/sign-in/sigma", {
