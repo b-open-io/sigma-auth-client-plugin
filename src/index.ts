@@ -6,6 +6,16 @@ import type { SubscriptionStatus } from "./types";
 export type { SubscriptionStatus } from "./types";
 export type OAuthProvider = "github" | "apple" | "twitter";
 
+// Export action types for proper TypeScript inference
+export interface SigmaSignInOptions {
+	authToken?: string;
+	callbackURL?: string;
+	errorCallbackURL?: string;
+	provider?: string;
+	clientId?: string;
+	disableRedirect?: boolean;
+}
+
 export const sigmaClient = () => {
 	return {
 		id: "sigma",
@@ -30,14 +40,7 @@ export const sigmaClient = () => {
 				},
 				signIn: {
 					sigma: async (
-						options?: {
-							authToken?: string;
-							callbackURL?: string;
-							errorCallbackURL?: string;
-							provider?: string;
-							clientId?: string;
-							disableRedirect?: boolean;
-						},
+						options?: SigmaSignInOptions,
 						fetchOptions?: BetterFetchOption,
 					) => {
 						// Two modes:
