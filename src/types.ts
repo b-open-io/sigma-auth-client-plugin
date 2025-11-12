@@ -60,10 +60,11 @@ export interface SignInOptions {
  * Subscription status response
  */
 export interface SubscriptionStatus {
-	tier: string;
-	active: boolean;
-	expiresAt?: number;
-	features?: string[];
+	tier: "free" | "plus" | "pro";
+	isActive: boolean;
+	nftOrigin?: string;
+	walletAddress?: string;
+	expiresAt?: Date;
 }
 
 /**
