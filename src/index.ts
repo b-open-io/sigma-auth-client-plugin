@@ -72,18 +72,19 @@ export const sigmaClient = () => {
 									"https://auth.sigmaidentity.com"
 								: "https://auth.sigmaidentity.com";
 
-					// Ensure redirect_uri is always absolute (OAuth requires absolute URLs)
-					const origin = typeof window !== "undefined" ? window.location.origin : "";
-					const callbackPath = options?.callbackURL || "/callback";
-					const redirectUri = callbackPath.startsWith("http")
-						? callbackPath
-						: `${origin}${callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`}`;
+						// Ensure redirect_uri is always absolute (OAuth requires absolute URLs)
+						const origin =
+							typeof window !== "undefined" ? window.location.origin : "";
+						const callbackPath = options?.callbackURL || "/callback";
+						const redirectUri = callbackPath.startsWith("http")
+							? callbackPath
+							: `${origin}${callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`}`;
 
 						const params = new URLSearchParams({
 							redirect_uri: redirectUri,
 							response_type: "code",
 							state,
-							scope: "read",
+							scope: "openid profile bsv:tools",
 						});
 
 						if (options?.clientId) {
