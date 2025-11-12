@@ -12,9 +12,15 @@ export const sigmaClient = () => {
 			return {
 				subscription: {
 					getStatus: async () => {
-						return await $fetch("/subscription/status", {
+						const res = await $fetch("/subscription/status", {
 							method: "GET",
 						});
+						if (res.error) {
+							throw new Error(
+								res.error.message || "Failed to fetch subscription status",
+							);
+						}
+						return res.data;
 					},
 				},
 				signIn: {
