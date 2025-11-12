@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "better-auth": {
+      "type": "remote",
+      "url": "https://mcp.chonkie.ai/better-auth/better-auth-builder/mcp",
+      "transport": "http",
+      "description": "Better Auth MCP server for authentication system understanding and code generation"
+    }
+  },
+  "projectContext": {
+    "type": "authentication-plugin",
+    "framework": "better-auth",
+    "pluginType": "client",
+    "integrations": [
+      "sigma-identity",
+      "bitcoin-auth",
+      "oauth2"
+    ],
+    "targets": [
+      "next.js",
+      "react",
+      "vite"
+    ]
+  }
+}
