@@ -40,26 +40,61 @@ export const sigmaClient = () => {
 						},
 						fetchOptions?: BetterFetchOption,
 					) => {
-						// Call server endpoint following Better Auth pattern
-						// Server handles OAuth redirect or direct sign-in based on context
-						const res = await $fetch("/sign-in/sigma", {
-							method: "POST",
-							body: {
-								callbackURL: options?.callbackURL,
-								errorCallbackURL: options?.errorCallbackURL,
-								provider: options?.provider,
-								clientId: options?.clientId,
-								disableRedirect: options?.disableRedirect,
-							},
-							headers: options?.authToken
-								? {
-										"X-Auth-Token": options.authToken,
-									}
-								: undefined,
-							...fetchOptions,
+						// Two modes:
+						// 1. With authToken: Call local endpoint (for auth server login)
+						// 2. Without authToken: OAuth redirect (for external clients)
+						if (options?.authToken) {
+							// Auth server local sign-in - call endpoint with authToken
+							const res = await $fetch("/sign-in/sigma", {
+								method: "POST",
+								body: {},
+								headers: {
+									"X-Auth-Token": options.authToken,
+								},
+								...fetchOptions,
+							});
+							return res;
+						}
+
+						// External OAuth client - redirect to auth server
+						const state = Math.random().toString(36).substring(7);
+
+						if (typeof window !== "undefined") {
+							sessionStorage.setItem("oauth_state", state);
+						}
+
+						const authUrl =
+							typeof process !== "undefined"
+								? process.env.NEXT_PUBLIC_SIGMA_AUTH_URL ||
+									"https://auth.sigmaidentity.com"
+								: "https://auth.sigmaidentity.com";
+
+						const redirectUri =
+							options?.callbackURL ||
+							`${typeof window !== "undefined" ? window.location.origin : ""}/callback`;
+
+						const params = new URLSearchParams({
+							redirect_uri: redirectUri,
+							response_type: "code",
+							state,
+							scope: "read",
 						});
 
-						return res;
+						if (options?.clientId) {
+							params.append("client_id", options.clientId);
+						}
+
+						if (options?.provider) {
+							params.append("provider", options.provider);
+						}
+
+						const fullAuthUrl = `${authUrl}/api/oauth/authorize?${params.toString()}`;
+
+						if (typeof window !== "undefined") {
+							window.location.href = fullAuthUrl;
+						}
+
+						return new Promise(() => {});
 					},
 				},
 			};
