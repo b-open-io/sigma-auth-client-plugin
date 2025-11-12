@@ -32,7 +32,7 @@ export interface SigmaClientConfig {
 /**
  * OAuth provider types
  */
-export type OAuthProvider = "github" | "google" | "handcash";
+export type OAuthProvider = "github" | "apple" | "twitter";
 
 /**
  * Sign-in options

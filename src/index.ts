@@ -1,13 +1,25 @@
 import type { BetterAuthClientPlugin } from "better-auth/client";
 
+// Re-export types for user convenience
+export type { SubscriptionStatus } from "./types";
+export type OAuthProvider = "github" | "apple" | "twitter";
+
 export const sigmaClient = () => {
 	return {
 		id: "sigma",
 
 		getActions: ($fetch) => {
 			return {
+				subscription: {
+					getStatus: async () => {
+						return await $fetch("/subscription/status", {
+							method: "GET",
+						});
+					},
+				},
 				signIn: {
 					sigma: (options?: {
+						clientId?: string;
 						callbackURL?: string;
 						errorCallbackURL?: string;
 						provider?: string;
@@ -42,6 +54,11 @@ export const sigmaClient = () => {
 							scope: "read",
 						});
 
+						// Add client_id if specified
+						if (options?.clientId) {
+							params.append("client_id", options.clientId);
+						}
+
 						// Add provider if specified (for GitHub/Google OAuth via Sigma)
 						if (options?.provider) {
 							params.append("provider", options.provider);
@@ -57,13 +74,6 @@ export const sigmaClient = () => {
 						// Return a promise that won't resolve since we're redirecting
 						return new Promise(() => {
 							// Redirecting - promise intentionally never resolves
-						});
-					},
-				},
-				subscription: {
-					getStatus: async () => {
-						return await $fetch("/subscription/status", {
-							method: "GET",
 						});
 					},
 				},
