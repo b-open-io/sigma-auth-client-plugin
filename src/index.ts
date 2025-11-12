@@ -4,7 +4,7 @@ export const sigmaClient = () => {
 	return {
 		id: "sigma",
 
-		getActions: (_$fetch) => {
+		getActions: ($fetch) => {
 			return {
 				signIn: {
 					sigma: (options?: {
@@ -57,6 +57,13 @@ export const sigmaClient = () => {
 						// Return a promise that won't resolve since we're redirecting
 						return new Promise(() => {
 							// Redirecting - promise intentionally never resolves
+						});
+					},
+				},
+				subscription: {
+					getStatus: async () => {
+						return await $fetch("/subscription/status", {
+							method: "GET",
 						});
 					},
 				},

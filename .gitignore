@@ -43,3 +43,6 @@ coverage/
 # Internal notes and MCP config
 .internal/
 .mcp.json
+
+# Claude settings
+.claude/
