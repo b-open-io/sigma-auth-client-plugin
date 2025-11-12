@@ -16,26 +16,6 @@ export interface SigmaSignInOptions {
 	disableRedirect?: boolean;
 }
 
-// PKCE helper functions
-const generateCodeVerifier = () => {
-	const array = new Uint8Array(32);
-	crypto.getRandomValues(array);
-	return btoa(String.fromCharCode(...array))
-		.replace(/\+/g, "-")
-		.replace(/\//g, "_")
-		.replace(/=/g, "");
-};
-
-const generateCodeChallenge = async (verifier: string) => {
-	const encoder = new TextEncoder();
-	const data = encoder.encode(verifier);
-	const hash = await crypto.subtle.digest("SHA-256", data);
-	return btoa(String.fromCharCode(...new Uint8Array(hash)))
-		.replace(/\+/g, "-")
-		.replace(/\//g, "_")
-		.replace(/=/g, "");
-};
-
 export const sigmaClient = () => {
 	return {
 		id: "sigma",
@@ -82,13 +62,8 @@ export const sigmaClient = () => {
 						// External OAuth client - redirect to auth server
 						const state = Math.random().toString(36).substring(7);
 
-						// Generate PKCE parameters for public clients
-						const codeVerifier = generateCodeVerifier();
-						const codeChallenge = await generateCodeChallenge(codeVerifier);
-
 						if (typeof window !== "undefined") {
 							sessionStorage.setItem("oauth_state", state);
-							sessionStorage.setItem("pkce_verifier", codeVerifier);
 						}
 
 						const authUrl =
@@ -110,8 +85,6 @@ export const sigmaClient = () => {
 							response_type: "code",
 							state,
 							scope: "openid profile bsv:tools",
-							code_challenge: codeChallenge,
-							code_challenge_method: "S256",
 						});
 
 						if (options?.clientId) {
