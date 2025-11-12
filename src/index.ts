@@ -91,7 +91,7 @@ export const sigmaClient = () => {
 							params.append("provider", options.provider);
 						}
 
-						const fullAuthUrl = `${authUrl}/api/oauth/authorize?${params.toString()}`;
+						const fullAuthUrl = `${authUrl}/api/auth/oauth2/authorize?${params.toString()}`;
 
 						if (typeof window !== "undefined") {
 							window.location.href = fullAuthUrl;
