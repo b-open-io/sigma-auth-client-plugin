@@ -42,5 +42,8 @@
 		"@biomejs/biome": "^2.3.5",
 		"@types/node": "^24.10.1",
 		"typescript": "^5.9.3"
+	},
+	"dependencies": {
+		"@sigma-auth/server-plugin": "^0.0.4"
 	}
 }
