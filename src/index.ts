@@ -9,6 +9,7 @@ export type OAuthProvider = "github" | "apple" | "twitter";
 // Export action types for proper TypeScript inference
 export interface SigmaSignInOptions {
 	authToken?: string;
+	bapId?: string; // Selected BAP identity ID (for multi-identity wallets)
 	callbackURL?: string;
 	errorCallbackURL?: string;
 	provider?: string;
@@ -112,6 +113,7 @@ export const sigmaClient = () => {
 							scope: "openid profile bsv:tools",
 							code_challenge: codeChallenge,
 							code_challenge_method: "S256",
+							prompt: "consent", // Always show consent page to check wallet unlock status
 						});
 
 						if (options?.clientId) {
