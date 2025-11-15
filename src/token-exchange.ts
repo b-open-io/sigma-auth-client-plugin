@@ -13,20 +13,20 @@ export interface TokenExchangeOptions {
 /**
  * OIDC userinfo response with Sigma Identity extensions
  * Extends Better Auth's User type with BAP-specific fields
+ *
+ * Actual fields returned by server plugin (verified):
+ * - sub, name, given_name, picture (standard OIDC claims)
+ * - pubkey, bap_id, bap_name (custom BAP claims)
  */
 export interface SigmaUserInfo extends Omit<User, "id"> {
-	// OIDC standard claim (maps to User.id)
-	sub: string;
+	// OIDC standard claims
+	sub: string; // User ID (maps to User.id)
+	picture?: string | null; // Profile image (OIDC standard, maps to BAP identity.image)
 
 	// BAP-specific claims
-	pubkey: string;
-	bap_id: string;
-	bap_profile?: unknown; // Structure defined by BAP protocol
-
-	// Wallet information (if connected)
-	wallet_address?: string;
-	wallet_provider?: string;
-	wallet_addresses?: string[];
+	pubkey: string; // Bitcoin public key
+	bap_id: string; // BAP identity key
+	bap_name?: string; // Display name (duplicate of 'name' field)
 }
 
 export interface TokenExchangeResult {
