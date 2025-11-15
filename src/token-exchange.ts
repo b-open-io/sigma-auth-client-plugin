@@ -15,9 +15,10 @@ export interface TokenExchangeOptions {
  * Stored in profile.profile JSONB column
  */
 export interface BAPProfile {
-	id?: string; // BAP identity key (e.g. "A4PYmuKGG61WCjjBaRpuSEbqytG")
-	rootAddress?: string; // Root Bitcoin address
+	idKey: string; // BAP identity key (e.g. "A4PYmuKGG61WCjjBaRpuSEbqytG")
+	rootAddress: string; // Root Bitcoin address
 	currentAddress?: string; // Current Bitcoin address
+	addresses?: Array<{ address: string; txId: string; block: number }>; // Historical addresses
 	identity?: {
 		"@context"?: string; // Schema.org context
 		"@type"?: string; // Schema.org type (e.g. "Person")
