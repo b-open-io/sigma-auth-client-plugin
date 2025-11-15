@@ -11,12 +11,28 @@ export interface TokenExchangeOptions {
 }
 
 /**
+ * BAP Profile structure from api.sigmaidentity.com
+ * Stored in profile.profile JSONB column
+ */
+export interface BAPProfile {
+	identity?: {
+		name?: string;
+		alternateName?: string;
+		image?: string;
+		description?: string;
+		[key: string]: unknown;
+	};
+	[key: string]: unknown;
+}
+
+/**
  * OIDC userinfo response with Sigma Identity extensions
  * Extends Better Auth's User type with BAP-specific fields
  *
- * Actual fields returned by server plugin (verified):
+ * Fields returned by server plugin:
  * - sub, name, given_name, picture (standard OIDC claims)
  * - pubkey, bap_id, bap_name (custom BAP claims)
+ * - bap_profile (full BAP identity from blockchain/API)
  */
 export interface SigmaUserInfo extends Omit<User, "id"> {
 	// OIDC standard claims
@@ -27,6 +43,7 @@ export interface SigmaUserInfo extends Omit<User, "id"> {
 	pubkey: string; // Bitcoin public key
 	bap_id: string; // BAP identity key
 	bap_name?: string; // Display name (duplicate of 'name' field)
+	bap_profile?: BAPProfile | null; // Full BAP identity data from api.sigmaidentity.com
 }
 
 export interface TokenExchangeResult {
