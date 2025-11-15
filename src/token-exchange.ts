@@ -15,35 +15,44 @@ export interface TokenExchangeOptions {
  * Stored in profile.profile JSONB column
  */
 export interface BAPProfile {
+	id?: string; // BAP identity key (e.g. "A4PYmuKGG61WCjjBaRpuSEbqytG")
+	rootAddress?: string; // Root Bitcoin address
+	currentAddress?: string; // Current Bitcoin address
 	identity?: {
-		name?: string;
-		alternateName?: string;
-		image?: string;
-		description?: string;
-		[key: string]: unknown;
+		"@context"?: string; // Schema.org context
+		"@type"?: string; // Schema.org type (e.g. "Person")
+		alternateName?: string; // Display name/username
+		givenName?: string; // First name
+		familyName?: string; // Last name
+		image?: string; // Profile image URL
+		banner?: string; // Banner image URL
+		description?: string; // Bio/description
+		[key: string]: unknown; // Additional schema.org fields
 	};
-	[key: string]: unknown;
+	[key: string]: unknown; // Additional BAP fields
 }
 
 /**
  * OIDC userinfo response with Sigma Identity extensions
  * Extends Better Auth's User type with BAP-specific fields
  *
- * Fields returned by server plugin:
- * - sub, name, given_name, picture (standard OIDC claims)
- * - pubkey, bap_id, bap_name (custom BAP claims)
- * - bap_profile (full BAP identity from blockchain/API)
+ * Standard OIDC claims:
+ * - sub, name, given_name, family_name, picture
+ *
+ * Custom claims:
+ * - pubkey: Bitcoin public key for this identity
+ * - bap: Full BAP identity from api.sigmaidentity.com/blockchain
  */
 export interface SigmaUserInfo extends Omit<User, "id"> {
 	// OIDC standard claims
 	sub: string; // User ID (maps to User.id)
-	picture?: string | null; // Profile image (OIDC standard, maps to BAP identity.image)
+	given_name?: string; // From bap.identity.givenName
+	family_name?: string | null; // From bap.identity.familyName
+	picture?: string | null; // From bap.identity.image
 
-	// BAP-specific claims
+	// Custom claims
 	pubkey: string; // Bitcoin public key
-	bap_id: string; // BAP identity key
-	bap_name?: string; // Display name (duplicate of 'name' field)
-	bap_profile?: BAPProfile | null; // Full BAP identity data from api.sigmaidentity.com
+	bap?: BAPProfile | null; // Full BAP identity data
 }
 
 export interface TokenExchangeResult {
