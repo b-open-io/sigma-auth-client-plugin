@@ -37,6 +37,17 @@ const generateCodeChallenge = async (verifier: string) => {
 		.replace(/=/g, "");
 };
 
+export interface OAuthCallbackResult {
+	user: Record<string, any>;
+	access_token: string;
+	refresh_token?: string;
+}
+
+export interface OAuthCallbackError {
+	title: string;
+	message: string;
+}
+
 export const sigmaClient = () => {
 	return {
 		id: "sigma",
@@ -132,6 +143,155 @@ export const sigmaClient = () => {
 						}
 
 						return new Promise(() => {});
+					},
+				},
+				sigma: {
+					/**
+					 * Handle OAuth callback after redirect from auth server
+					 * Verifies state, exchanges code for tokens, and returns user data
+					 *
+					 * @param searchParams - URL search params from callback (code, state, error)
+					 * @returns Promise resolving to user data and tokens
+					 * @throws OAuthCallbackError if callback fails
+					 */
+					handleCallback: async (
+						searchParams: URLSearchParams,
+					): Promise<OAuthCallbackResult> => {
+						// Check for OAuth error
+						const error = searchParams.get("error");
+						if (error) {
+							const errorDescription = searchParams.get("error_description");
+							throw {
+								title: "Authentication Error",
+								message:
+									errorDescription ||
+									error ||
+									"An unknown error occurred during authentication.",
+							} as OAuthCallbackError;
+						}
+
+						// Check for authorization code
+						const code = searchParams.get("code");
+						const state = searchParams.get("state");
+
+						if (!code) {
+							throw {
+								title: "Missing Authorization Code",
+								message:
+									"The authorization code was not received from the authentication server.",
+							} as OAuthCallbackError;
+						}
+
+						// Verify state for CSRF protection
+						const savedState =
+							typeof window !== "undefined"
+								? sessionStorage.getItem("oauth_state")
+								: null;
+
+						if (state !== savedState) {
+							// Clear invalid state
+							if (typeof window !== "undefined") {
+								sessionStorage.removeItem("oauth_state");
+							}
+
+							throw {
+								title: "Security Error",
+								message: `Invalid state parameter. Please try signing in again.`,
+							} as OAuthCallbackError;
+						}
+
+						// Clear state after successful verification
+						if (typeof window !== "undefined") {
+							sessionStorage.removeItem("oauth_state");
+						}
+
+						// Get PKCE verifier
+						const codeVerifier =
+							typeof window !== "undefined"
+								? sessionStorage.getItem("pkce_verifier") || undefined
+								: undefined;
+
+						// Exchange code for tokens via backend API
+						// This must be done server-side because it requires bitcoin-auth signature
+						try {
+							const response = await fetch("/api/auth/callback", {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({
+									code,
+									state,
+									code_verifier: codeVerifier,
+								}),
+							});
+
+							if (!response.ok) {
+								let errorMessage =
+									"Failed to exchange authorization code for access token.";
+								let errorTitle = "Token Exchange Failed";
+
+								try {
+									const errorData = await response.json();
+									const endpoint = errorData.endpoint || "unknown";
+									const status = errorData.status || response.status;
+
+									// Parse nested error details if present
+									if (errorData.details) {
+										try {
+											const nestedError = JSON.parse(errorData.details);
+											if (nestedError.error_description) {
+												errorMessage = nestedError.error_description;
+											}
+											if (nestedError.error === "invalid_client") {
+												errorTitle = "Platform Not Registered";
+												errorMessage =
+													"This platform is not registered with the authentication server.";
+											}
+										} catch {
+											errorMessage = errorData.details;
+										}
+									} else if (errorData.error) {
+										errorMessage = errorData.error;
+									}
+
+									errorMessage += `\n\nBackend: ${status} (${endpoint})`;
+								} catch {
+									// Use default error message
+								}
+
+								throw {
+									title: errorTitle,
+									message: errorMessage,
+								} as OAuthCallbackError;
+							}
+
+							const data = await response.json();
+							return {
+								user: data.user,
+								access_token: data.access_token,
+								refresh_token: data.refresh_token,
+							};
+						} catch (err) {
+							// If already an OAuthCallbackError, rethrow
+							if (
+								typeof err === "object" &&
+								err !== null &&
+								"title" in err &&
+								"message" in err
+							) {
+								throw err;
+							}
+
+							// Otherwise wrap in error object
+							throw {
+								title: "Authentication Failed",
+								message:
+									err instanceof Error
+										? err.message
+										: "An unknown error occurred.",
+							} as OAuthCallbackError;
+						}
 					},
 				},
 			};
