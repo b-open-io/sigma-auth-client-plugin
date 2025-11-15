@@ -1,7 +1,7 @@
 import type { BetterFetchOption } from "@better-fetch/fetch";
 import type { BetterAuthClientPlugin } from "better-auth/client";
-import type { SubscriptionStatus } from "./types";
 import type { SigmaUserInfo } from "./token-exchange";
+import type { SubscriptionStatus } from "./types";
 
 // Re-export types for user convenience
 export type { SubscriptionStatus } from "./types";
