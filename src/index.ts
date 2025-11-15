@@ -113,7 +113,6 @@ export const sigmaClient = () => {
 							scope: "openid profile bsv:tools",
 							code_challenge: codeChallenge,
 							code_challenge_method: "S256",
-							prompt: "consent", // Always show consent page to check wallet unlock status
 						});
 
 						if (options?.clientId) {
@@ -124,7 +123,9 @@ export const sigmaClient = () => {
 							params.append("provider", options.provider);
 						}
 
-						const fullAuthUrl = `${authUrl}/api/auth/oauth2/authorize?${params.toString()}`;
+						// Use custom authorize endpoint that checks wallet unlock before proceeding
+						// See /app/api/oauth2/authorize/route.ts on auth server
+						const fullAuthUrl = `${authUrl}/oauth2/authorize?${params.toString()}`;
 
 						if (typeof window !== "undefined") {
 							window.location.href = fullAuthUrl;
