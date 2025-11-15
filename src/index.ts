@@ -1,17 +1,19 @@
 import type { BetterFetchOption } from "@better-fetch/fetch";
 import type { BetterAuthClientPlugin } from "better-auth/client";
 import type { SubscriptionStatus } from "./types";
+import type { SigmaUserInfo } from "./token-exchange";
 
 // Re-export types for user convenience
 export type { SubscriptionStatus } from "./types";
 export type OAuthProvider = "github" | "apple" | "twitter";
 
-// Re-export server-side token exchange utilities
+// Re-export server-side token exchange utilities and types
 export {
 	exchangeCodeForTokens,
+	type SigmaUserInfo,
+	type TokenExchangeError,
 	type TokenExchangeOptions,
 	type TokenExchangeResult,
-	type TokenExchangeError,
 } from "./token-exchange";
 
 // Export action types for proper TypeScript inference
@@ -46,7 +48,7 @@ const generateCodeChallenge = async (verifier: string) => {
 };
 
 export interface OAuthCallbackResult {
-	user: Record<string, any>;
+	user: SigmaUserInfo;
 	access_token: string;
 	refresh_token?: string;
 }

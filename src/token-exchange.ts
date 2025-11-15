@@ -1,3 +1,4 @@
+import type { User } from "better-auth";
 import { getAuthToken } from "bitcoin-auth";
 
 export interface TokenExchangeOptions {
@@ -9,8 +10,27 @@ export interface TokenExchangeOptions {
 	issuerUrl?: string;
 }
 
+/**
+ * OIDC userinfo response with Sigma Identity extensions
+ * Extends Better Auth's User type with BAP-specific fields
+ */
+export interface SigmaUserInfo extends Omit<User, "id"> {
+	// OIDC standard claim (maps to User.id)
+	sub: string;
+
+	// BAP-specific claims
+	pubkey: string;
+	bap_id: string;
+	bap_profile?: unknown; // Structure defined by BAP protocol
+
+	// Wallet information (if connected)
+	wallet_address?: string;
+	wallet_provider?: string;
+	wallet_addresses?: string[];
+}
+
 export interface TokenExchangeResult {
-	user: Record<string, any>;
+	user: SigmaUserInfo;
 	access_token: string;
 	refresh_token?: string;
 }
