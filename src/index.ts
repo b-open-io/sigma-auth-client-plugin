@@ -9,8 +9,8 @@ export type OAuthProvider = "github" | "apple" | "twitter";
 
 // Re-export server-side token exchange utilities and types
 export {
-	exchangeCodeForTokens,
 	type BAPProfile,
+	exchangeCodeForTokens,
 	type SigmaUserInfo,
 	type TokenExchangeError,
 	type TokenExchangeOptions,
