@@ -6,6 +6,14 @@ import type { SubscriptionStatus } from "./types";
 export type { SubscriptionStatus } from "./types";
 export type OAuthProvider = "github" | "apple" | "twitter";
 
+// Re-export server-side token exchange utilities
+export {
+	exchangeCodeForTokens,
+	type TokenExchangeOptions,
+	type TokenExchangeResult,
+	type TokenExchangeError,
+} from "./token-exchange";
+
 // Export action types for proper TypeScript inference
 export interface SigmaSignInOptions {
 	authToken?: string;
