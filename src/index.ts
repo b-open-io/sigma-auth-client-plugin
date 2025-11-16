@@ -109,11 +109,6 @@ export const sigmaClient = () => {
 						const codeVerifier = generateCodeVerifier();
 						const codeChallenge = await generateCodeChallenge(codeVerifier);
 
-						if (typeof window !== "undefined") {
-							sessionStorage.setItem("oauth_state", state);
-							sessionStorage.setItem("pkce_verifier", codeVerifier);
-						}
-
 						const authUrl =
 							typeof process !== "undefined"
 								? process.env.NEXT_PUBLIC_SIGMA_AUTH_URL ||
@@ -128,6 +123,16 @@ export const sigmaClient = () => {
 							? callbackPath
 							: `${origin}${callbackPath.startsWith("/") ? callbackPath : `/${callbackPath}`}`;
 
+						const clientId = options?.clientId || "unknown";
+
+						// Save OAuth state for callback verification
+						if (typeof window !== "undefined") {
+							sessionStorage.setItem("oauth_state", state);
+							sessionStorage.setItem("pkce_verifier", codeVerifier);
+							sessionStorage.setItem("oauth_redirect_uri", redirectUri);
+							sessionStorage.setItem("oauth_client_id", clientId);
+						}
+
 						const params = new URLSearchParams({
 							redirect_uri: redirectUri,
 							response_type: "code",
@@ -137,8 +142,8 @@ export const sigmaClient = () => {
 							code_challenge_method: "S256",
 						});
 
-						if (options?.clientId) {
-							params.append("client_id", options.clientId);
+						if (clientId) {
+							params.append("client_id", clientId);
 						}
 
 						if (options?.provider) {
@@ -193,16 +198,29 @@ export const sigmaClient = () => {
 							} as OAuthCallbackError;
 						}
 
-						// Verify state for CSRF protection
+						// Get saved OAuth state from sessionStorage
 						const savedState =
 							typeof window !== "undefined"
 								? sessionStorage.getItem("oauth_state")
 								: null;
+						const savedRedirectUri =
+							typeof window !== "undefined"
+								? sessionStorage.getItem("oauth_redirect_uri")
+								: null;
+						const savedClientId =
+							typeof window !== "undefined"
+								? sessionStorage.getItem("oauth_client_id")
+								: null;
 
-						if (state !== savedState) {
+						// Verify state for CSRF protection
+						const verifyState = savedState;
+
+						if (state !== verifyState) {
 							// Clear invalid state
 							if (typeof window !== "undefined") {
 								sessionStorage.removeItem("oauth_state");
+								sessionStorage.removeItem("oauth_redirect_uri");
+								sessionStorage.removeItem("oauth_client_id");
 							}
 
 							throw {
@@ -211,62 +229,76 @@ export const sigmaClient = () => {
 							} as OAuthCallbackError;
 						}
 
-						// Clear state after successful verification
-						if (typeof window !== "undefined") {
-							sessionStorage.removeItem("oauth_state");
-						}
-
 						// Get PKCE verifier
 						const codeVerifier =
 							typeof window !== "undefined"
 								? sessionStorage.getItem("pkce_verifier") || undefined
 								: undefined;
 
-						// Exchange code for tokens via backend API
-						// This must be done server-side because it requires bitcoin-auth signature
+						// Clear session storage after retrieving values
+						if (typeof window !== "undefined") {
+							sessionStorage.removeItem("oauth_state");
+							sessionStorage.removeItem("pkce_verifier");
+							sessionStorage.removeItem("oauth_redirect_uri");
+							sessionStorage.removeItem("oauth_client_id");
+						}
+
+						// Exchange code for tokens DIRECTLY with auth server (public client with PKCE)
+						// No backend proxy needed - this is standard OAuth 2.0 public client flow
 						try {
-							const response = await fetch("/api/auth/callback", {
-								method: "POST",
-								headers: {
-									"Content-Type": "application/json",
-								},
-								body: JSON.stringify({
-									code,
-									state,
-									code_verifier: codeVerifier,
-								}),
+							const authUrl =
+								typeof process !== "undefined"
+									? process.env.NEXT_PUBLIC_SIGMA_AUTH_URL ||
+										"https://auth.sigmaidentity.com"
+									: "https://auth.sigmaidentity.com";
+
+							// Build token request parameters
+							const tokenParams = new URLSearchParams({
+								grant_type: "authorization_code",
+								code,
+								redirect_uri: savedRedirectUri || window.location.origin + "/callback",
+								client_id: savedClientId || "unknown",
 							});
 
-							if (!response.ok) {
+							// Add PKCE verifier if available
+							if (codeVerifier) {
+								tokenParams.append("code_verifier", codeVerifier);
+							}
+
+							const tokenResponse = await fetch(
+								`${authUrl}/api/auth/oauth2/token`,
+								{
+									method: "POST",
+									headers: {
+										"Content-Type": "application/x-www-form-urlencoded",
+									},
+									body: tokenParams.toString(),
+								},
+							);
+
+							if (!tokenResponse.ok) {
 								let errorMessage =
 									"Failed to exchange authorization code for access token.";
 								let errorTitle = "Token Exchange Failed";
 
 								try {
-									const errorData = await response.json();
-									const endpoint = errorData.endpoint || "unknown";
-									const status = errorData.status || response.status;
+									const errorData = await tokenResponse.json();
 
-									// Parse nested error details if present
-									if (errorData.details) {
-										try {
-											const nestedError = JSON.parse(errorData.details);
-											if (nestedError.error_description) {
-												errorMessage = nestedError.error_description;
-											}
-											if (nestedError.error === "invalid_client") {
-												errorTitle = "Platform Not Registered";
-												errorMessage =
-													"This platform is not registered with the authentication server.";
-											}
-										} catch {
-											errorMessage = errorData.details;
-										}
+									if (errorData.error_description) {
+										errorMessage = errorData.error_description;
 									} else if (errorData.error) {
 										errorMessage = errorData.error;
 									}
 
-									errorMessage += `\n\nBackend: ${status} (${endpoint})`;
+									if (errorData.error === "invalid_client") {
+										errorTitle = "Client Not Registered";
+										errorMessage =
+											"This application is not registered with Sigma Identity.";
+									} else if (errorData.error === "invalid_grant") {
+										errorTitle = "Invalid Authorization Code";
+										errorMessage =
+											"The authorization code is invalid or expired. Please try again.";
+									}
 								} catch {
 									// Use default error message
 								}
@@ -277,11 +309,31 @@ export const sigmaClient = () => {
 								} as OAuthCallbackError;
 							}
 
-							const data = await response.json();
+							const tokens = await tokenResponse.json();
+
+							// Get user info with the access token
+							const userInfoResponse = await fetch(
+								`${authUrl}/api/auth/oauth2/userinfo`,
+								{
+									headers: {
+										Authorization: `Bearer ${tokens.access_token}`,
+									},
+								},
+							);
+
+							if (!userInfoResponse.ok) {
+								throw {
+									title: "User Info Failed",
+									message: "Failed to retrieve user information from Sigma.",
+								} as OAuthCallbackError;
+							}
+
+							const userInfo = await userInfoResponse.json();
+
 							return {
-								user: data.user,
-								access_token: data.access_token,
-								refresh_token: data.refresh_token,
+								user: userInfo,
+								access_token: tokens.access_token,
+								refresh_token: tokens.refresh_token,
 							};
 						} catch (err) {
 							// If already an OAuthCallbackError, rethrow
