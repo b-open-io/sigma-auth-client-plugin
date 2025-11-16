@@ -21,7 +21,7 @@ export interface CallbackRouteConfig {
 	issuerUrl?: string;
 	/** OAuth client ID (default: NEXT_PUBLIC_SIGMA_CLIENT_ID) */
 	clientId?: string;
-	/** Member private key for signing (default: MEMBER_PRIVATE_KEY env) */
+	/** Member private key for signing (default: SIGMA_MEMBER_PRIVATE_KEY or MEMBER_PRIVATE_KEY env) */
 	memberPrivateKey?: string;
 	/** Callback path (default: /callback) */
 	callbackPath?: string;
@@ -64,16 +64,19 @@ export function createCallbackHandler(config?: CallbackRouteConfig) {
 			}
 
 			// Get configuration from env or config
+			// Support multiple env var names for flexibility
 			const memberPrivateKey =
-				config?.memberPrivateKey || process.env.MEMBER_PRIVATE_KEY;
+				config?.memberPrivateKey ||
+				process.env.SIGMA_MEMBER_PRIVATE_KEY ||
+				process.env.MEMBER_PRIVATE_KEY;
 			if (!memberPrivateKey) {
 				console.error(
-					"[Sigma OAuth Callback] MEMBER_PRIVATE_KEY not configured",
+					"[Sigma OAuth Callback] SIGMA_MEMBER_PRIVATE_KEY not configured",
 				);
 				return Response.json(
 					{
 						error: "Server configuration error",
-						details: "Missing member key",
+						details: "Missing SIGMA_MEMBER_PRIVATE_KEY",
 					},
 					{ status: 500 },
 				);
