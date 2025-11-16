@@ -64,11 +64,8 @@ export function createCallbackHandler(config?: CallbackRouteConfig) {
 			}
 
 			// Get configuration from env or config
-			// Support multiple env var names for flexibility
 			const memberPrivateKey =
-				config?.memberPrivateKey ||
-				process.env.SIGMA_MEMBER_PRIVATE_KEY ||
-				process.env.MEMBER_PRIVATE_KEY;
+				config?.memberPrivateKey || process.env.SIGMA_MEMBER_PRIVATE_KEY;
 			if (!memberPrivateKey) {
 				console.error(
 					"[Sigma OAuth Callback] SIGMA_MEMBER_PRIVATE_KEY not configured",
